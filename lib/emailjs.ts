@@ -5,9 +5,10 @@ interface SendReviewEmailParams {
   toEmail: string;
   prTitle: string;
   review: ReviewResponse;
+  shareUrl?: string;
 }
 
-export async function sendReviewEmail({ toEmail, prTitle, review }: SendReviewEmailParams) {
+export async function sendReviewEmail({ toEmail, prTitle, review, shareUrl }: SendReviewEmailParams) {
   const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
   const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
   const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
@@ -30,7 +31,7 @@ export async function sendReviewEmail({ toEmail, prTitle, review }: SendReviewEm
     critical_count: criticalCount,
     warnings_count: warningsCount,
     improvements_count: improvementsCount,
-    review_url: typeof window !== 'undefined' ? window.location.href : '',
+    review_url: shareUrl || (typeof window !== 'undefined' ? window.location.href : ''),
   };
 
   try {

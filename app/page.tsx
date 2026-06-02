@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { nanoid } from 'nanoid';
 import MRInput from '@/components/MRInput';
 import DiffInput from '@/components/DiffInput';
 import ReviewPanel from '@/components/ReviewPanel';
@@ -59,10 +61,25 @@ export default function Page() {
       });
 
       if (user?.email) {
+        let shareUrl = '';
+        try {
+          const shareId = nanoid(10);
+          await setDoc(doc(db, 'sharedReviews', shareId), {
+            prData: data.prData,
+            review: data,
+            createdAt: serverTimestamp(),
+            shareId,
+          });
+          shareUrl = `${window.location.origin}/share/${shareId}`;
+        } catch (dbErr) {
+          console.error("Failed to generate shared link:", dbErr);
+        }
+
         sendReviewEmail({
           toEmail: user.email,
           prTitle: data.prData?.title || 'Merge Request Review',
           review: data,
+          shareUrl,
         }).then(() => {
           setEmailSent(true);
           setTimeout(() => setEmailSent(false), 4000);
@@ -105,10 +122,34 @@ export default function Page() {
       });
 
       if (user?.email) {
+        let shareUrl = '';
+        try {
+          const shareId = nanoid(10);
+          const prData = {
+            title: 'Raw Diff Review',
+            author: user.displayName || user.email || 'Anonymous',
+            changedFiles: 0,
+            additions: 0,
+            deletions: 0,
+            baseBranch: '',
+            headBranch: '',
+          };
+          await setDoc(doc(db, 'sharedReviews', shareId), {
+            prData,
+            review: data,
+            createdAt: serverTimestamp(),
+            shareId,
+          });
+          shareUrl = `${window.location.origin}/share/${shareId}`;
+        } catch (dbErr) {
+          console.error("Failed to generate shared link, falling back:", dbErr);
+        }
+
         sendReviewEmail({
           toEmail: user.email,
           prTitle: 'Raw Diff Review',
           review: data,
+          shareUrl,
         }).then(() => {
           setEmailSent(true);
           setTimeout(() => setEmailSent(false), 4000);
