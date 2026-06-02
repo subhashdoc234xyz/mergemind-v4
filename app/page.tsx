@@ -51,6 +51,13 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
+      console.log("EmailJS Diagnostic — handleReview:", {
+        userEmail: user?.email,
+        serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
+        templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
+        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing"
+      });
+
       if (user?.email) {
         sendReviewEmail({
           toEmail: user.email,
@@ -59,7 +66,9 @@ export default function Page() {
         }).then(() => {
           setEmailSent(true);
           setTimeout(() => setEmailSent(false), 4000);
-        }).catch(() => {});
+        }).catch((err) => {
+          console.error("EmailJS Send Failed:", err);
+        });
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
@@ -88,6 +97,13 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
+      console.log("EmailJS Diagnostic — handleRawDiffReview:", {
+        userEmail: user?.email,
+        serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
+        templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
+        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing"
+      });
+
       if (user?.email) {
         sendReviewEmail({
           toEmail: user.email,
@@ -96,7 +112,9 @@ export default function Page() {
         }).then(() => {
           setEmailSent(true);
           setTimeout(() => setEmailSent(false), 4000);
-        }).catch(() => {});
+        }).catch((err) => {
+          console.error("EmailJS Send Failed:", err);
+        });
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
