@@ -8,6 +8,8 @@ export interface MRData {
   description: string | null
   author: { name: string }
   changes: MRChange[]
+  source_branch?: string
+  target_branch?: string
 }
 
 export interface MRSummary {
@@ -58,6 +60,8 @@ export async function getMRChanges(projectPath: string, mrIid: string): Promise<
     title: mrDetails.title,
     description: mrDetails.description,
     author: { name: mrDetails.author?.name || 'Unknown' },
+    source_branch: mrDetails.source_branch,
+    target_branch: mrDetails.target_branch,
     changes: mrChanges.changes?.map((c: any) => ({
       new_path: c.new_path,
       diff: c.diff

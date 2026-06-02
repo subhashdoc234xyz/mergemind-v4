@@ -13,4 +13,13 @@ export interface ReviewResponse {
   issues: ReviewIssue[]
   commentsPosted: number
   error?: string
+  prData?: {
+    title: string;
+    author: string;
+    changedFiles: number;
+    additions: number;
+    deletions: number;
+    baseBranch: string;
+    headBranch: string;
+  };
 }

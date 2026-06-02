@@ -7,6 +7,8 @@ import MRInput from '@/components/MRInput';
 import ReviewPanel from '@/components/ReviewPanel';
 import Header from '@/components/Header';
 import AuthPage from '@/components/AuthPage';
+import ShareButton from '@/components/ShareButton';
+import ExportPDFButton from '@/components/ExportPDFButton';
 import { ReviewResponse } from '@/types/review';
 
 export default function Page() {
@@ -147,7 +149,13 @@ export default function Page() {
 
           {/* Review Results Panel */}
           {review && !loading && (
-            <div className="w-full transition-all duration-500 ease-out">
+            <div className="w-full transition-all duration-500 ease-out space-y-4">
+              {review.prData && (
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                  <ShareButton prData={review.prData} review={review} />
+                  <ExportPDFButton prData={review.prData} review={review} />
+                </div>
+              )}
               <ReviewPanel review={review} />
             </div>
           )}

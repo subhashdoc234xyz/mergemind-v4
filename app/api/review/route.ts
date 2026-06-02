@@ -120,12 +120,32 @@ ${review.summary}
 
     await postMRComment(projectPath, mrIid, summaryComment)
 
+    // Compute additions and deletions
+    let additions = 0
+    let deletions = 0
+    for (const change of mrData.changes || []) {
+      const diffLines = (change.diff || '').split('\n')
+      for (const line of diffLines) {
+        if (line.startsWith('+') && !line.startsWith('+++')) additions++
+        if (line.startsWith('-') && !line.startsWith('---')) deletions++
+      }
+    }
+
     // STEP 12 — Return result
     return NextResponse.json({
       summary: review.summary,
       healthScore: review.healthScore,
       issues: review.issues,
       commentsPosted,
+      prData: {
+        title: mrData.title,
+        author: mrData.author.name,
+        changedFiles: mrData.changes.length,
+        additions,
+        deletions,
+        baseBranch: mrData.target_branch || 'main',
+        headBranch: mrData.source_branch || 'feature',
+      }
     })
 
   } catch (err: unknown) {
