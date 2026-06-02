@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import MRInput from '@/components/MRInput';
+import DiffInput from '@/components/DiffInput';
 import ReviewPanel from '@/components/ReviewPanel';
 import Header from '@/components/Header';
 import AuthPage from '@/components/AuthPage';
 import ShareButton from '@/components/ShareButton';
 import ExportMarkdownButton from '@/components/ExportMarkdownButton';
 import { ReviewResponse } from '@/types/review';
+import { sendReviewEmail } from '@/lib/emailjs';
 
 export default function Page() {
   const [user, setUser] = useState<User | null>(null);
@@ -17,6 +19,8 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [review, setReview] = useState<ReviewResponse | null>(null);
   const [error, setError] = useState('');
+  const [inputMode, setInputMode] = useState<'url' | 'diff'>('url');
+  const [emailSent, setEmailSent] = useState(false);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -46,12 +50,61 @@ export default function Page() {
 
       const data: ReviewResponse = await res.json();
       setReview(data);
+
+      if (user?.email) {
+        sendReviewEmail({
+          toEmail: user.email,
+          prTitle: data.prData?.title || 'Merge Request Review',
+          review: data,
+        }).then(() => {
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 4000);
+        }).catch(() => {});
+      }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleRawDiffReview(diff: string) {
+    setLoading(true);
+    setError('');
+    setReview(null);
+
+    try {
+      const res = await fetch('/api/review-diff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ diff }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to review the diff.');
+      }
+
+      const data: ReviewResponse = await res.json();
+      setReview(data);
+
+      if (user?.email) {
+        sendReviewEmail({
+          toEmail: user.email,
+          prTitle: 'Raw Diff Review',
+          review: data,
+        }).then(() => {
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 4000);
+        }).catch(() => {});
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
 
   // Show premium loading spinner while checking auth session
   if (authLoading) {
@@ -105,8 +158,38 @@ export default function Page() {
           </div>
 
           {/* Input Form Section */}
-          <div className="w-full">
-            <MRInput onSubmit={handleReview} loading={loading} />
+          <div className="w-full space-y-6">
+            {/* Input Mode Toggle */}
+            <div className="flex bg-gray-900/60 border border-gray-800 rounded-xl p-1 w-fit mx-auto sm:mx-0 shadow-inner">
+              <button
+                onClick={() => setInputMode('url')}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  inputMode === 'url'
+                    ? 'bg-orange-500 text-gray-950 shadow-md font-bold'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                🔗 GitLab MR URL
+              </button>
+              <button
+                onClick={() => setInputMode('diff')}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  inputMode === 'diff'
+                    ? 'bg-orange-500 text-gray-950 shadow-md font-bold'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                📋 Paste Raw Diff
+              </button>
+            </div>
+
+            {/* Input Components */}
+            {inputMode === 'url' && (
+              <MRInput onSubmit={handleReview} loading={loading} />
+            )}
+            {inputMode === 'diff' && (
+              <DiffInput onSubmit={handleRawDiffReview} loading={loading} />
+            )}
           </div>
 
           {/* Loading State */}
@@ -146,6 +229,15 @@ export default function Page() {
               <p className="font-mono text-xs leading-relaxed">{error}</p>
             </div>
           )}
+
+          {/* Email Sent Toast */}
+          {emailSent && (
+            <div className="w-full bg-orange-950/40 border border-orange-500/20 text-orange-300 p-4 rounded-xl text-sm flex items-center gap-2.5 shadow-lg animate-fade-in">
+              <span>✅</span>
+              <span>Review summary sent to <strong>{user?.email}</strong></span>
+            </div>
+          )}
+
 
           {/* Review Results Panel */}
           {review && !loading && (

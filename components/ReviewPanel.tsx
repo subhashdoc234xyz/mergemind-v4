@@ -42,15 +42,26 @@ export default function ReviewPanel({ review }: Props) {
             </div>
 
             {/* Comments Posted + Live badge */}
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Live on GitLab
-              </span>
-              <span className="text-xs text-gray-500">
-                Posted {review.commentsPosted} comment{review.commentsPosted !== 1 ? 's' : ''}
-              </span>
-            </div>
+            {review.commentsPosted > 0 ? (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  Live on GitLab
+                </span>
+                <span className="text-xs text-gray-500">
+                  Posted {review.commentsPosted} comment{review.commentsPosted !== 1 ? 's' : ''}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                  📋 Local Review
+                </span>
+                <span className="text-xs text-gray-500">
+                  Not posted to GitLab
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Health score badge */}
