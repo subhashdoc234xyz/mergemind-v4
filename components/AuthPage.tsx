@@ -52,6 +52,7 @@ export default function AuthPage() {
     setError("");
     try {
       const provider = new GithubAuthProvider();
+      provider.addScope('user:email');
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       setError(err.message.replace("Firebase: ", ""));
