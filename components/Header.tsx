@@ -24,8 +24,16 @@ export default function Header({ user }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
+          {user.photoURL && (
+            <img
+              src={user.photoURL}
+              alt={user.displayName || "User"}
+              className="w-7 h-7 rounded-full border border-orange-500/20 object-cover shadow-sm hidden sm:inline-block"
+              referrerPolicy="no-referrer"
+            />
+          )}
           <span className="text-xs bg-gray-900 border border-gray-800 text-gray-400 px-3 py-1.5 rounded-full hidden sm:inline-block font-mono">
-            {user.email}
+            {user.displayName || user.email}
           </span>
           <button
             onClick={() => signOut(auth)}
