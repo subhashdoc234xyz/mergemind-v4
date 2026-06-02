@@ -8,7 +8,7 @@ import ReviewPanel from '@/components/ReviewPanel';
 import Header from '@/components/Header';
 import AuthPage from '@/components/AuthPage';
 import ShareButton from '@/components/ShareButton';
-import ExportPDFButton from '@/components/ExportPDFButton';
+import ExportMarkdownButton from '@/components/ExportMarkdownButton';
 import { ReviewResponse } from '@/types/review';
 
 export default function Page() {
@@ -153,7 +153,7 @@ export default function Page() {
               {review.prData && (
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <ShareButton prData={review.prData} review={review} />
-                  <ExportPDFButton prData={review.prData} review={review} />
+                  <ExportMarkdownButton prData={review.prData} review={review} />
                 </div>
               )}
               <ReviewPanel review={review} />
