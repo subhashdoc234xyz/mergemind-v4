@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import ReviewPanel from '@/components/ReviewPanel';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function SharedReviewPage() {
   const { id } = useParams();
@@ -11,11 +13,14 @@ export default function SharedReviewPage() {
 
   useEffect(() => {
     async function load() {
+      if (!id) return;
       try {
-        const res = await fetch(`/api/share?id=${id}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error);
-        setData(json);
+        const docRef = doc(db, 'sharedReviews', id as string);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          throw new Error('Review not found');
+        }
+        setData(docSnap.data());
       } catch (err: any) {
         setError(err.message);
       } finally {
