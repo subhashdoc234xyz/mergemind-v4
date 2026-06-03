@@ -53,14 +53,16 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
+      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email;
+
       console.log("EmailJS Diagnostic — handleReview:", {
-        userEmail: user?.email,
+        userEmail,
         serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
         templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
         publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing"
       });
 
-      if (user?.email) {
+      if (userEmail) {
         let shareUrl = '';
         try {
           const shareId = nanoid(10);
@@ -76,7 +78,7 @@ export default function Page() {
         }
 
         sendReviewEmail({
-          toEmail: user.email,
+          toEmail: userEmail,
           prTitle: data.prData?.title || 'Merge Request Review',
           review: data,
           shareUrl,
@@ -114,20 +116,22 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
+      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email;
+
       console.log("EmailJS Diagnostic — handleRawDiffReview:", {
-        userEmail: user?.email,
+        userEmail,
         serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
         templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
         publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing"
       });
 
-      if (user?.email) {
+      if (userEmail) {
         let shareUrl = '';
         try {
           const shareId = nanoid(10);
           const prData = {
             title: 'Raw Diff Review',
-            author: user.displayName || user.email || 'Anonymous',
+            author: user.displayName || userEmail || 'Anonymous',
             changedFiles: 0,
             additions: 0,
             deletions: 0,
@@ -146,7 +150,7 @@ export default function Page() {
         }
 
         sendReviewEmail({
-          toEmail: user.email,
+          toEmail: userEmail,
           prTitle: 'Raw Diff Review',
           review: data,
           shareUrl,
