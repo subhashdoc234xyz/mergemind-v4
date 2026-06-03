@@ -59,7 +59,12 @@ export default function Page() {
         userEmail,
         serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
         templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
-        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing"
+        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing",
+        userRaw: user ? {
+          email: user.email,
+          displayName: user.displayName,
+          providerData: user.providerData?.map(p => ({ providerId: p.providerId, email: p.email }))
+        } : null
       });
 
       if (userEmail) {
@@ -122,7 +127,12 @@ export default function Page() {
         userEmail,
         serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
         templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
-        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing"
+        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing",
+        userRaw: user ? {
+          email: user.email,
+          displayName: user.displayName,
+          providerData: user.providerData?.map(p => ({ providerId: p.providerId, email: p.email }))
+        } : null
       });
 
       if (userEmail) {
