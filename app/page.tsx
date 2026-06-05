@@ -55,17 +55,7 @@ export default function Page() {
 
       const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email;
 
-      console.log("EmailJS Diagnostic — handleReview:", {
-        userEmail,
-        serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
-        templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
-        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing",
-        userRaw: user ? {
-          email: user.email,
-          displayName: user.displayName,
-          providerData: user.providerData?.map(p => ({ providerId: p.providerId, email: p.email }))
-        } : null
-      });
+
 
       if (userEmail) {
         let shareUrl = '';
@@ -123,17 +113,7 @@ export default function Page() {
 
       const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email;
 
-      console.log("EmailJS Diagnostic — handleRawDiffReview:", {
-        userEmail,
-        serviceId: process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
-        templateId: process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
-        publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ? "Present" : "Missing",
-        userRaw: user ? {
-          email: user.email,
-          displayName: user.displayName,
-          providerData: user.providerData?.map(p => ({ providerId: p.providerId, email: p.email }))
-        } : null
-      });
+
 
       if (userEmail) {
         let shareUrl = '';

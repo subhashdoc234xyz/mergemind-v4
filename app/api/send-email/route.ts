@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const { toEmail, prTitle, review, shareUrl } = await req.json();
 
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) {
-      console.warn('RESEND_API_KEY not configured on server');
-      return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+
+    if (!gmailUser || !gmailAppPassword || gmailUser === 'your_gmail@gmail.com') {
+      console.warn('Gmail SMTP not configured — check GMAIL_USER and GMAIL_APP_PASSWORD in .env.local');
+      return NextResponse.json({ error: 'Email service not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD in .env.local' }, { status: 500 });
     }
 
-    const resend = new Resend(apiKey);
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword,
+      },
+    });
 
     const criticalCount = review.issues.filter((i: { severity: string }) => i.severity === 'CRITICAL').length;
     const warningsCount = review.issues.filter((i: { severity: string }) => i.severity === 'WARNING').length;
@@ -128,19 +136,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 </html>
     `;
 
-    const { error } = await resend.emails.send({
-      from: 'MergeMinD <onboarding@resend.dev>',
-      to: [toEmail],
+    await transporter.sendMail({
+      from: `MergeMinD <${gmailUser}>`,
+      to: toEmail,
       subject: `MergeMinD Review: ${prTitle} — Score ${review.healthScore}/10`,
       html,
     });
 
-    if (error) {
-      console.error('Resend error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    console.log('Review email sent successfully via Resend');
+    console.log(`Review email sent successfully via Gmail SMTP to ${toEmail}`);
     return NextResponse.json({ success: true });
 
   } catch (err: unknown) {
