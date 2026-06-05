@@ -3,10 +3,13 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const { toEmail, prTitle, review, shareUrl } = await req.json();
+    const { toEmail: requestedEmail, prTitle, review, shareUrl } = await req.json();
 
     const gmailUser = process.env.GMAIL_USER;
     const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+
+    // If no recipient email provided (e.g. GitHub auth doesn't share email), send to the Gmail sender
+    const toEmail = requestedEmail || gmailUser;
 
     if (!gmailUser || !gmailAppPassword || gmailUser === 'your_gmail@gmail.com') {
       console.warn('Gmail SMTP not configured — check GMAIL_USER and GMAIL_APP_PASSWORD in .env.local');
