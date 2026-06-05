@@ -23,6 +23,7 @@ export default function Page() {
   const [error, setError] = useState('');
   const [inputMode, setInputMode] = useState<'url' | 'diff'>('url');
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
   // Listen for auth state changes
   useEffect(() => {
@@ -54,9 +55,11 @@ export default function Page() {
       setReview(data);
 
       const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email;
+      console.log('Detected user email for notification:', userEmail || 'NONE — email will not be sent');
 
-
-
+      if (!userEmail) {
+        console.warn('No email found on user object — skipping email notification');
+      }
       if (userEmail) {
         let shareUrl = '';
         try {
@@ -79,9 +82,12 @@ export default function Page() {
           shareUrl,
         }).then(() => {
           setEmailSent(true);
+          setEmailError('');
           setTimeout(() => setEmailSent(false), 4000);
         }).catch((err) => {
-          console.error("EmailJS Send Failed:", err);
+          console.error("Email Send Failed:", err);
+          setEmailError(`Failed to send email to ${userEmail}: ${err.message}`);
+          setTimeout(() => setEmailError(''), 6000);
         });
       }
     } catch (err: any) {
@@ -112,9 +118,11 @@ export default function Page() {
       setReview(data);
 
       const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email;
+      console.log('Detected user email for notification:', userEmail || 'NONE — email will not be sent');
 
-
-
+      if (!userEmail) {
+        console.warn('No email found on user object — skipping email notification');
+      }
       if (userEmail) {
         let shareUrl = '';
         try {
@@ -146,9 +154,12 @@ export default function Page() {
           shareUrl,
         }).then(() => {
           setEmailSent(true);
+          setEmailError('');
           setTimeout(() => setEmailSent(false), 4000);
         }).catch((err) => {
-          console.error("EmailJS Send Failed:", err);
+          console.error("Email Send Failed:", err);
+          setEmailError(`Failed to send email to ${userEmail}: ${err.message}`);
+          setTimeout(() => setEmailError(''), 6000);
         });
       }
     } catch (err: any) {
@@ -288,6 +299,14 @@ export default function Page() {
             <div className="w-full bg-orange-950/40 border border-orange-500/20 text-orange-300 p-4 rounded-xl text-sm flex items-center gap-2.5 shadow-lg animate-fade-in">
               <span>✅</span>
               <span>Review summary sent to <strong>{user?.email}</strong></span>
+            </div>
+          )}
+
+          {/* Email Error Toast */}
+          {emailError && (
+            <div className="w-full bg-red-950/40 border border-red-500/20 text-red-300 p-4 rounded-xl text-sm flex items-center gap-2.5 shadow-lg animate-fade-in">
+              <span>❌</span>
+              <span>{emailError}</span>
             </div>
           )}
 
