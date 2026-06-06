@@ -122,7 +122,7 @@ export default function Page() {
         const shareId = nanoid(10);
         const prData = {
           title: 'Raw Diff Review',
-          author: user.displayName || userEmail || 'Anonymous',
+          author: user?.displayName || userEmail || 'Anonymous',
           changedFiles: 0,
           additions: 0,
           deletions: 0,
