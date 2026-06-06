@@ -7,7 +7,6 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
-  updateEmail,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
@@ -58,31 +57,26 @@ export default function AuthPage() {
       const result = await signInWithPopup(auth, provider);
 
       // GitHub OAuth often doesn't populate user.email on Firebase
-      // Fetch it from GitHub API using the OAuth access token
-      if (!result.user.email) {
-        const credential = GithubAuthProvider.credentialFromResult(result);
-        const accessToken = credential?.accessToken;
+      // Fetch it from GitHub API and store in localStorage as fallback
+      const credential = GithubAuthProvider.credentialFromResult(result);
+      const accessToken = credential?.accessToken;
 
-        if (accessToken) {
-          try {
-            const res = await fetch('https://api.github.com/user/emails', {
-              headers: { Authorization: `token ${accessToken}` },
-            });
-            const emails = await res.json();
-            const primaryEmail = emails.find(
-              (e: { primary: boolean; verified: boolean; email: string }) =>
-                e.primary && e.verified
-            )?.email;
+      if (accessToken) {
+        try {
+          const res = await fetch('https://api.github.com/user/emails', {
+            headers: { Authorization: `token ${accessToken}` },
+          });
+          const emails = await res.json();
+          const primaryEmail = emails.find(
+            (e: { primary: boolean; verified: boolean; email: string }) =>
+              e.primary && e.verified
+          )?.email;
 
-            if (primaryEmail && result.user) {
-              // Update the Firebase user's email so it's available everywhere
-              await updateEmail(result.user, primaryEmail).catch((e) =>
-                console.warn('Could not update Firebase email (may already be linked):', e.message)
-              );
-            }
-          } catch (emailErr) {
-            console.warn('Could not fetch GitHub email:', emailErr);
+          if (primaryEmail) {
+            localStorage.setItem('mergemind_user_email', primaryEmail);
           }
+        } catch (emailErr) {
+          console.warn('Could not fetch GitHub email:', emailErr);
         }
       }
     } catch (err: any) {

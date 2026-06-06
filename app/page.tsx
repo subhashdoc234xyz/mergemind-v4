@@ -54,7 +54,7 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
-      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email || '';
+      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email || localStorage.getItem('mergemind_user_email') || '';
       console.log('Detected user email for notification:', userEmail || 'NONE — will fallback to GMAIL_USER on server');
 
       // Always attempt to send email — server falls back to GMAIL_USER if toEmail is empty
@@ -113,7 +113,7 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
-      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email || '';
+      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email || localStorage.getItem('mergemind_user_email') || '';
       console.log('Detected user email for notification:', userEmail || 'NONE — will fallback to GMAIL_USER on server');
 
       // Always attempt to send email — server falls back to GMAIL_USER if toEmail is empty
