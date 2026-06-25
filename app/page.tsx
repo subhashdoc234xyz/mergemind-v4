@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { nanoid } from 'nanoid';
 import MRInput from '@/components/MRInput';
 import DiffInput from '@/components/DiffInput';
@@ -34,6 +34,29 @@ export default function Page() {
     return () => unsub();
   }, []);
 
+  async function getRecipientEmail(currentUser: User | null): Promise<string> {
+    let recipientEmail = currentUser?.email || localStorage.getItem('mergemind_user_email') || '';
+    if (!recipientEmail && currentUser?.providerData) {
+      for (const profile of currentUser.providerData) {
+        if (profile.email) {
+          recipientEmail = profile.email;
+          break;
+        }
+      }
+    }
+    if (!recipientEmail && db && currentUser?.uid) {
+      try {
+        const freshDoc = await getDoc(doc(db, 'users', currentUser.uid));
+        if (freshDoc.exists()) {
+          recipientEmail = freshDoc.data().email || '';
+        }
+      } catch (err) {
+        console.warn('Failed to fetch fresh user document for email fallback:', err);
+      }
+    }
+    return recipientEmail;
+  }
+
   async function handleReview(mrUrl: string) {
     setLoading(true);
     setError('');
@@ -54,38 +77,43 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
-      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email || localStorage.getItem('mergemind_user_email') || '';
-      console.log('Detected user email for notification:', userEmail || 'NONE — will fallback to GMAIL_USER on server');
+      const userEmail = await getRecipientEmail(user);
+      console.log('Detected user email for notification:', userEmail || 'NONE');
 
-      // Always attempt to send email — server falls back to GMAIL_USER if toEmail is empty
-      let shareUrl = '';
-      try {
-        const shareId = nanoid(10);
-        await setDoc(doc(db, 'sharedReviews', shareId), {
-          prData: data.prData,
+      if (userEmail) {
+        let shareUrl = '';
+        try {
+          const shareId = nanoid(10);
+          await setDoc(doc(db, 'sharedReviews', shareId), {
+            prData: data.prData,
+            review: data,
+            createdAt: serverTimestamp(),
+            shareId,
+          });
+          shareUrl = `${window.location.origin}/share/${shareId}`;
+        } catch (dbErr) {
+          console.error("Failed to generate shared link:", dbErr);
+        }
+
+        sendReviewEmail({
+          toEmail: userEmail,
+          prTitle: data.prData?.title || 'Merge Request Review',
           review: data,
-          createdAt: serverTimestamp(),
-          shareId,
+          shareUrl,
+        }).then(() => {
+          setEmailSent(true);
+          setEmailError('');
+          setTimeout(() => setEmailSent(false), 4000);
+        }).catch((err) => {
+          console.error("Email Send Failed:", err);
+          setEmailError(`Failed to send email: ${err.message}`);
+          setTimeout(() => setEmailError(''), 6000);
         });
-        shareUrl = `${window.location.origin}/share/${shareId}`;
-      } catch (dbErr) {
-        console.error("Failed to generate shared link:", dbErr);
-      }
-
-      sendReviewEmail({
-        toEmail: userEmail,
-        prTitle: data.prData?.title || 'Merge Request Review',
-        review: data,
-        shareUrl,
-      }).then(() => {
-        setEmailSent(true);
-        setEmailError('');
-        setTimeout(() => setEmailSent(false), 4000);
-      }).catch((err) => {
-        console.error("Email Send Failed:", err);
-        setEmailError(`Failed to send email: ${err.message}`);
+      } else {
+        console.error('No recipient email available — email NOT sent.');
+        setEmailError('Could not determine your email address. Please re-login.');
         setTimeout(() => setEmailError(''), 6000);
-      });
+      }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {
@@ -113,47 +141,52 @@ export default function Page() {
       const data: ReviewResponse = await res.json();
       setReview(data);
 
-      const userEmail = user?.email || user?.providerData?.find((p) => p.email)?.email || localStorage.getItem('mergemind_user_email') || '';
-      console.log('Detected user email for notification:', userEmail || 'NONE — will fallback to GMAIL_USER on server');
+      const userEmail = await getRecipientEmail(user);
+      console.log('Detected user email for notification:', userEmail || 'NONE');
 
-      // Always attempt to send email — server falls back to GMAIL_USER if toEmail is empty
-      let shareUrl = '';
-      try {
-        const shareId = nanoid(10);
-        const prData = {
-          title: 'Raw Diff Review',
-          author: user?.displayName || userEmail || 'Anonymous',
-          changedFiles: 0,
-          additions: 0,
-          deletions: 0,
-          baseBranch: '',
-          headBranch: '',
-        };
-        await setDoc(doc(db, 'sharedReviews', shareId), {
-          prData,
+      if (userEmail) {
+        let shareUrl = '';
+        try {
+          const shareId = nanoid(10);
+          const prData = {
+            title: 'Raw Diff Review',
+            author: user?.displayName || userEmail || 'Anonymous',
+            changedFiles: 0,
+            additions: 0,
+            deletions: 0,
+            baseBranch: '',
+            headBranch: '',
+          };
+          await setDoc(doc(db, 'sharedReviews', shareId), {
+            prData,
+            review: data,
+            createdAt: serverTimestamp(),
+            shareId,
+          });
+          shareUrl = `${window.location.origin}/share/${shareId}`;
+        } catch (dbErr) {
+          console.error("Failed to generate shared link, falling back:", dbErr);
+        }
+
+        sendReviewEmail({
+          toEmail: userEmail,
+          prTitle: 'Raw Diff Review',
           review: data,
-          createdAt: serverTimestamp(),
-          shareId,
+          shareUrl,
+        }).then(() => {
+          setEmailSent(true);
+          setEmailError('');
+          setTimeout(() => setEmailSent(false), 4000);
+        }).catch((err) => {
+          console.error("Email Send Failed:", err);
+          setEmailError(`Failed to send email: ${err.message}`);
+          setTimeout(() => setEmailError(''), 6000);
         });
-        shareUrl = `${window.location.origin}/share/${shareId}`;
-      } catch (dbErr) {
-        console.error("Failed to generate shared link, falling back:", dbErr);
-      }
-
-      sendReviewEmail({
-        toEmail: userEmail,
-        prTitle: 'Raw Diff Review',
-        review: data,
-        shareUrl,
-      }).then(() => {
-        setEmailSent(true);
-        setEmailError('');
-        setTimeout(() => setEmailSent(false), 4000);
-      }).catch((err) => {
-        console.error("Email Send Failed:", err);
-        setEmailError(`Failed to send email: ${err.message}`);
+      } else {
+        console.error('No recipient email available — email NOT sent.');
+        setEmailError('Could not determine your email address. Please re-login.');
         setTimeout(() => setEmailError(''), 6000);
-      });
+      }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {

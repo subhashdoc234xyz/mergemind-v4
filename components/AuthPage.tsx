@@ -8,7 +8,8 @@ import {
   GithubAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,10 +23,23 @@ export default function AuthPage() {
     setLoading(true);
     setError("");
     try {
+      let result;
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        result = await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        result = await createUserWithEmailAndPassword(auth, email, password);
+      }
+      const user = result.user;
+      if (user) {
+        let capturedEmail = user.email;
+        if (!capturedEmail && user.providerData) {
+          for (const profile of user.providerData) {
+            if (profile.email) { capturedEmail = profile.email; break; }
+          }
+        }
+        if (capturedEmail) {
+          await setDoc(doc(db, "users", user.uid), { email: capturedEmail }, { merge: true });
+        }
       }
     } catch (err: any) {
       setError(err.message.replace("Firebase: ", ""));
@@ -40,7 +54,19 @@ export default function AuthPage() {
     try {
       const provider = new GoogleAuthProvider();
       provider.addScope('email');
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user) {
+        let capturedEmail = user.email;
+        if (!capturedEmail && user.providerData) {
+          for (const profile of user.providerData) {
+            if (profile.email) { capturedEmail = profile.email; break; }
+          }
+        }
+        if (capturedEmail) {
+          await setDoc(doc(db, "users", user.uid), { email: capturedEmail }, { merge: true });
+        }
+      }
     } catch (err: any) {
       setError(err.message.replace("Firebase: ", ""));
     } finally {
@@ -55,29 +81,43 @@ export default function AuthPage() {
       const provider = new GithubAuthProvider();
       provider.addScope('user:email');
       const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
       // GitHub OAuth often doesn't populate user.email on Firebase
       // Fetch it from GitHub API and store in localStorage as fallback
       const credential = GithubAuthProvider.credentialFromResult(result);
       const accessToken = credential?.accessToken;
 
+      let primaryEmail = user.email;
       if (accessToken) {
         try {
           const res = await fetch('https://api.github.com/user/emails', {
             headers: { Authorization: `token ${accessToken}` },
           });
           const emails = await res.json();
-          const primaryEmail = emails.find(
+          const emailObj = Array.isArray(emails) ? emails.find(
             (e: { primary: boolean; verified: boolean; email: string }) =>
               e.primary && e.verified
-          )?.email;
+          ) : null;
 
-          if (primaryEmail) {
-            localStorage.setItem('mergemind_user_email', primaryEmail);
+          if (emailObj) {
+            primaryEmail = emailObj.email;
           }
         } catch (emailErr) {
           console.warn('Could not fetch GitHub email:', emailErr);
         }
+      }
+
+      let capturedEmail = primaryEmail;
+      if (!capturedEmail && user.providerData) {
+        for (const profile of user.providerData) {
+          if (profile.email) { capturedEmail = profile.email; break; }
+        }
+      }
+
+      if (capturedEmail) {
+        localStorage.setItem('mergemind_user_email', capturedEmail);
+        await setDoc(doc(db, "users", user.uid), { email: capturedEmail }, { merge: true });
       }
     } catch (err: any) {
       setError(err.message.replace("Firebase: ", ""));
