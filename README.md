@@ -29,9 +29,11 @@ MergeMinD is an AI-powered code review agent built for developers and teams look
 
 ## Demo
 
-![Demo Screenshot Placeholder](./assets/demo-placeholder.png)
+### 1. Analysis Dashboard
+![MergeMinD Dashboard](./assets/demo_dashboard.png)
 
-*Watch the walkthrough video here: [Demo Video Link Placeholder](https://youtube.com/placeholder)*
+### 2. Comprehensive Code Review Report
+![MergeMinD Review Report](./assets/demo_review.png)
 
 ---
 
